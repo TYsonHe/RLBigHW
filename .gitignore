@@ -1,0 +1,35 @@
+# Ignore data files
+Datasets/*.csv
+
+# Ignore Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore environment files
+.env
+.env.local
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore editor files
+.vscode/
+.idea/
+
+# Ignore large files
+*.pt
+*.pth
+*.bin
+*.h5
+*.zip
+*.tar.gz
+
+# Ignore training logs and outputs
+logs/
+outputs/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
