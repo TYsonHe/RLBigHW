@@ -1,5 +1,4 @@
-# Ignore data files
-Datasets/*.csv
+# Ignore big data files
 
 # Ignore Python bytecode and cache
 __pycache__/
