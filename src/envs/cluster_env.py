@@ -70,6 +70,9 @@ class LLMClusterEnv(gym.Env):
         # 加载初始数据（如果提供了数据管道）
         if self.data_pipeline is not None:
             self._load_initial_data()
+        else:
+            # 如果没有数据管道，使用默认值初始化
+            self._initialize_default_state()
 
     def _load_initial_data(self):
         """加载初始数据。"""
@@ -119,7 +122,7 @@ class LLMClusterEnv(gym.Env):
             'avg_output_tokens': 500,
             'avg_sla_deadline': 200,
             'model_distribution': {'LLaMA3-7B': 0.5, 'Qwen-14B': 0.3, 'DeepSeek-70B': 0.2},
-            'priority_distribution': {'high': 0.1, 'medium': 0.3, 'low': 0.6}
+            'priority_distribution': {'high': 0.1, 'medium': 0.6, 'low': 0.3}
         }
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[np.ndarray, dict]:
