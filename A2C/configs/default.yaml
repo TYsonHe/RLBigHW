@@ -6,22 +6,22 @@ agent:
   state_dim: 14
   action_dim: 36
   hidden_dims: [256, 256]
-  lr: 7.0e-4
+  lr: 3.0e-4          # 降低学习率，防止训练不稳定
   gamma: 0.99
   gae_lambda: 0.95
-  entropy_coef: 0.01
+  entropy_coef: 0.05  # 增大熵系数，增强探索防止策略坍塌
   value_coef: 0.5
   max_grad_norm: 0.5
 
 training:
-  num_episodes: 2000
-  max_steps: 500
+  num_episodes: 500    # 减少总训练量
+  max_steps: 200       # 缩短 episode 长度，加快迭代
   n_steps: 10          # 每隔 N 步执行一次 A2C 更新
-  val_interval: 100    # 每 N 个 episode 做一次验证
+  val_interval: 50     # 更频繁验证
   val_episodes: 5      # 验证时跑 N 个 episode 取平均
   test_episodes: 10    # 最终测试跑 N 个 episode 取平均
-  log_interval: 10
-  save_interval: 200
+  log_interval: 5
+  save_interval: 100
 
 env:
   num_nodes: 100

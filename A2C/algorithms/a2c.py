@@ -130,8 +130,9 @@ class A2CAgent:
         advantages_t = torch.FloatTensor(advantages).to(self.device)
         returns_t = torch.FloatTensor(returns).to(self.device)
 
-        # 标准化优势
+        # 标准化优势并裁剪，防止梯度爆炸
         advantages_t = (advantages_t - advantages_t.mean()) / (advantages_t.std() + 1e-8)
+        advantages_t = torch.clamp(advantages_t, -10.0, 10.0)
 
         # 前向传播
         logits, values = self.network(states_t)
@@ -142,8 +143,8 @@ class A2CAgent:
         # 策略损失：最大化 log π * A → 最小化 -log π * A
         policy_loss = -(log_probs * advantages_t).mean()
 
-        # 价值损失
-        value_loss = F.mse_loss(values.squeeze(-1), returns_t)
+        # 价值损失（Huber loss，对异常值更鲁棒）
+        value_loss = F.smooth_l1_loss(values.squeeze(-1), returns_t)
 
         # 熵奖励（最大化熵 → 最小化 -熵）
         entropy_loss = -entropy.mean()

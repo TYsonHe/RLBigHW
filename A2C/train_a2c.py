@@ -56,6 +56,9 @@ def run_episode(env: LLMClusterEnv, agent: A2CAgent,
         next_state, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
 
+        # 裁剪奖励，防止 OOM 惩罚爆炸导致价值函数发散
+        reward = max(-50.0, min(50.0, reward))
+
         agent.buffer.add(state, action, reward, value, log_prob, float(done))
         episode_reward += reward
         episode_steps += 1
