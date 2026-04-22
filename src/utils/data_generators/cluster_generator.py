@@ -45,15 +45,15 @@ def generate_cluster(num_nodes: int, split: str, seed: int = 42):
     return pd.DataFrame(records)
 
 def main():
-    base_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+    # 从 src/utils/data_generators/ 退到项目根目录，再进 data/
+    base_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")
     os.makedirs(base_dir, exist_ok=True)
     
     configs = [("train", 500, 42), ("val", 100, 43), ("test", 50, 44)]
-    
     for split, num, seed in configs:
         df = generate_cluster(num_nodes=num, split=split, seed=seed)
         df.to_csv(os.path.join(base_dir, f"cluster_profiles_{split}.csv"), index=False)
-        print(f"[Cluster] {split}: {num} nodes generated -> DQN/data/")
+        print(f"[Cluster] {split}: {num} nodes -> {base_dir}")
 
 if __name__ == "__main__":
     main()
