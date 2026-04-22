@@ -1,14 +1,15 @@
-# DQN/generate_datasets.py
 import os
 import sys
 
-# 将 DQN 目录加入路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# 项目根目录是 src 的父目录
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
 
-from utils.data_generators.cluster_generator import main as gen_cluster
-from utils.data_generators.workload_generator import main as gen_workload
+# 导入加 src 前缀
+from src.utils.data_generators.cluster_generator import main as gen_cluster
+from src.utils.data_generators.workload_generator import main as gen_workload
 
 if __name__ == "__main__":
     gen_cluster()
     gen_workload()
-    print("\n✅ All datasets generated in DQN/data/")
+    print(f"\n✅ All datasets saved to {os.path.join(PROJECT_ROOT, 'data')}")
