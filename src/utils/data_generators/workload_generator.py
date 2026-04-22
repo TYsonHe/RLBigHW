@@ -67,15 +67,14 @@ def generate_workload_stream(num_requests: int, duration_hours: float, split: st
     return df
 
 def main():
-    base_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+    base_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data")
     os.makedirs(base_dir, exist_ok=True)
     
-    configs = [("train", 50000, 24 * 7, 42), ("val", 10000, 24, 43), ("test", 10000, 24, 44)]
-    
+    configs = [("train", 50000, 24*7, 42), ("val", 10000, 24, 43), ("test", 10000, 24, 44)]
     for split, num, hours, seed in configs:
         df = generate_workload_stream(num, hours, split, seed)
         df.to_csv(os.path.join(base_dir, f"workload_streams_{split}.csv"), index=False)
-        print(f"[Workload] {split}: {len(df)} requests over {hours}h generated -> DQN/data/")
+        print(f"[Workload] {split}: {len(df)} requests -> {base_dir}")
 
 if __name__ == "__main__":
     main()
