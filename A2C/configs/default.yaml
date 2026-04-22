@@ -1,5 +1,7 @@
 # A2C 默认超参数配置
 
+device: auto   # auto / cuda / cpu
+
 agent:
   state_dim: 14
   action_dim: 36

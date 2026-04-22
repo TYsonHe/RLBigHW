@@ -11,8 +11,8 @@ from datetime import datetime
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.envs.cluster_env import LLMClusterEnv
 from algorithms.a2c import A2CAgent
+from src.envs.cluster_env import LLMClusterEnv
 
 SEED = 42
 
@@ -105,7 +105,8 @@ def evaluate(env: LLMClusterEnv, agent: A2CAgent, cfg: dict,
     n_steps = train_cfg.get("n_steps", 10)
 
     all_rewards = []
-    all_stats = {"completed": [], "oom": [], "sla_violations": [], "total_cost": []}
+    all_stats = {"completed": [], "oom": [],
+                 "sla_violations": [], "total_cost": []}
 
     for i in range(num_episodes):
         result = run_episode(env, agent, max_steps, n_steps,
@@ -130,12 +131,29 @@ def train():
     print(f"[A2C] 训练开始，时间戳: {timestamp}")
 
     # 加载配置
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "default.yaml")
+    config_path = os.path.join(os.path.dirname(
+        __file__), "configs", "default.yaml")
     cfg = load_config(config_path)
+
+    # 解析设备
+    device_str = cfg.get("device", "auto")
+    if device_str == "auto":
+        device_str = "cuda" if torch.cuda.is_available() else "cpu"
+
+    if device_str == "cuda" and torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = True
+        print(f"[A2C] 使用 GPU: {torch.cuda.get_device_name(0)}")
+        print(
+            f"[A2C] CUDA 版本: {torch.version.cuda} | 显存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    else:
+        print("[A2C] 使用 CPU")
 
     # 固定随机种子
     np.random.seed(SEED)
     torch.manual_seed(SEED)
+    if device_str == "cuda":
+        torch.cuda.manual_seed(SEED)
+        torch.cuda.manual_seed_all(SEED)
 
     data_dir = os.path.join(PROJECT_ROOT, "data")
     a2c_dir = os.path.dirname(os.path.abspath(__file__))
@@ -178,7 +196,9 @@ def train():
         entropy_coef=agent_cfg.get("entropy_coef", 0.01),
         value_coef=agent_cfg.get("value_coef", 0.5),
         max_grad_norm=agent_cfg.get("max_grad_norm", 0.5),
+        device=device_str,
     )
+    print(f"[A2C] Agent 运行设备: {agent.device}")
 
     # 日志文件
     train_log_path = os.path.join(log_dir, f"train_{timestamp}.jsonl")
@@ -220,7 +240,8 @@ def train():
 
         # 定期验证
         if episode > 0 and episode % val_interval == 0:
-            val_summary = evaluate(val_env, agent, cfg, val_episodes, seed_base=50000)
+            val_summary = evaluate(val_env, agent, cfg,
+                                   val_episodes, seed_base=50000)
             val_entry = {"timestamp": timestamp, "episode": episode}
             val_entry.update(val_summary)
             val_log.write(json.dumps(val_entry, ensure_ascii=False) + "\n")
@@ -237,12 +258,14 @@ def train():
             # 保存最优模型
             if val_summary["reward_mean"] > best_val_reward:
                 best_val_reward = val_summary["reward_mean"]
-                agent.save(os.path.join(checkpoint_dir, f"a2c_best_{timestamp}.pt"))
+                agent.save(os.path.join(checkpoint_dir,
+                           f"a2c_best_{timestamp}.pt"))
                 print(f"  -> 新最优模型已保存 (val_reward={best_val_reward:.2f})")
 
         # 定期保存检查点
         if episode > 0 and episode % save_interval == 0:
-            agent.save(os.path.join(checkpoint_dir, f"a2c_ep{episode}_{timestamp}.pt"))
+            agent.save(os.path.join(checkpoint_dir,
+                       f"a2c_ep{episode}_{timestamp}.pt"))
 
     # 训练结束，保存最终模型
     agent.save(os.path.join(checkpoint_dir, f"a2c_final_{timestamp}.pt"))
@@ -258,7 +281,8 @@ def train():
 
     test_log_path = os.path.join(log_dir, f"test_{timestamp}.jsonl")
     with open(test_log_path, "w", encoding="utf-8") as f:
-        f.write(json.dumps({"timestamp": timestamp, **test_summary}, ensure_ascii=False) + "\n")
+        f.write(json.dumps({"timestamp": timestamp, **
+                test_summary}, ensure_ascii=False) + "\n")
 
     print("\n" + "=" * 60)
     print("测试集评估结果（最优模型）")
