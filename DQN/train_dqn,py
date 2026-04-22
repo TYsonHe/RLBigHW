@@ -1,0 +1,106 @@
+# DQN/train_dqn.py
+import os
+import sys
+import json
+import numpy as np
+import torch
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from envs.cluster_env import LLMClusterEnv
+from algorithms.dqn import DQNAgent
+
+SEED = 42
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+def train():
+    data_dir = os.path.join(os.path.dirname(__file__), "data")
+    
+    env = LLMClusterEnv(
+        cluster_csv=os.path.join(data_dir, "cluster_profiles_train.csv"),
+        workload_csv=os.path.join(data_dir, "workload_streams_train.csv"),
+        num_nodes=100,
+        step_batch=10,
+    )
+    
+    agent = DQNAgent(
+        state_dim=14,
+        action_dim=36,
+        lr=1e-4,
+        gamma=0.99,
+        epsilon_start=1.0,
+        epsilon_end=0.01,
+        epsilon_decay=20000,
+        buffer_size=100000,
+        batch_size=256,
+        target_update=1000,
+    )
+    
+    checkpoint_dir = os.path.join(os.path.dirname(__file__), "checkpoints")
+    log_dir = os.path.join(os.path.dirname(__file__), "logs")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    os.makedirs(log_dir, exist_ok=True)
+    
+    log_file = open(os.path.join(log_dir, "training_log.jsonl"), "w")
+    
+    num_episodes = 2000
+    global_step = 0
+    
+    for episode in range(num_episodes):
+        state, _ = env.reset(seed=SEED + episode)
+        episode_reward = 0.0
+        episode_loss = []
+        
+        for t in range(500):
+            action = agent.select_action(state)
+            next_state, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+            
+            agent.replay_buffer.add(state, action, reward, next_state, done)
+            
+            agent.update_epsilon()
+            loss = agent.learn()
+            if loss:
+                episode_loss.append(loss)
+            
+            if global_step % 10 == 0:
+                agent.soft_update_target(tau=0.005)
+            
+            episode_reward += reward
+            state = next_state
+            global_step += 1
+            
+            if done:
+                break
+        
+        if episode % 50 == 0:
+            agent.target_net.load_state_dict(agent.policy_net.state_dict())
+        
+        if episode % 100 == 0:
+            agent.save(os.path.join(checkpoint_dir, f"dqn_episode_{episode}.pt"))
+        
+        log_entry = {
+            "episode": episode,
+            "reward": round(episode_reward, 2),
+            "loss": round(np.mean(episode_loss), 4) if episode_loss else None,
+            "epsilon": round(agent.epsilon, 4),
+            "completed": env.stats["completed"],
+            "oom": env.stats["oom"],
+            "sla_violations": env.stats["sla_violations"],
+            "steps": t,
+        }
+        log_file.write(json.dumps(log_entry) + "\n")
+        log_file.flush()
+        
+        if episode % 50 == 0:
+            print(f"Episode {episode:4d} | Reward: {episode_reward:8.2f} | "
+                  f"Epsilon: {agent.epsilon:.3f} | Completed: {env.stats['completed']} | "
+                  f"OOM: {env.stats['oom']} | SLA Viol: {env.stats['sla_violations']}")
+    
+    log_file.close()
+    agent.save(os.path.join(checkpoint_dir, "dqn_final.pt"))
+    print("Training complete. Final model saved to DQN/checkpoints/")
+
+if __name__ == "__main__":
+    train()
