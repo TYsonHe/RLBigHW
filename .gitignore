@@ -32,3 +32,10 @@ outputs/
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+# Ingore figure files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp

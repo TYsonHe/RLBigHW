@@ -4,7 +4,8 @@
       "Bash(python:*)",
       "Bash(conda activate:*)",
       "Bash(pip list:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(wc:*)"
     ]
   }
 }
